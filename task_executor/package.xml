@@ -35,8 +35,9 @@
   <run_depend>actionlib_msgs</run_depend>
   <run_depend>topological_navigation</run_depend>
   <run_depend>python-dateutil</run_depend>
+  <run_depend>wait_action</run_depend>
+  
   
   <test_depend>rostest</test_depend>
   <test_depend>topological_utils</test_depend>
-
 </package>
