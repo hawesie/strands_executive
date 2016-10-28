@@ -113,7 +113,7 @@ def task_event_string(te):
 
 def format_event(task_event):
     """ Prints a single event """
-    return 'task %s\t\t%s\t%s\t%s\t\t%s' % (task_event.task.task_id, task_event.task.action, task_event.task.start_node_id, task_event_string(task_event.event), datetime.fromtimestamp(task_event.time.to_sec()).strftime('%d/%m/%y %H:%M:%S'))
+    return 'task %s\t\t%s\t%s\t%s\t\t%s\t%s' % (task_event.task.task_id, task_event.task.action, task_event.task.start_node_id, task_event_string(task_event.event), datetime.fromtimestamp(task_event.time.to_sec()).strftime('%d/%m/%y %H:%M:%S'), task_event.description)
 
 
 def print_event(task_event):
@@ -344,7 +344,7 @@ def daily_windows_in_range(daily_start_time, daily_end_time, window_start, windo
 
 
 
-def reconstruct_routines(results, min_tasks=1, allow_open=True):
+def reconstruct_routines(results, min_tasks=1):
     """Pair up routine starts and ends. This typically requires all task events to infer end of earlier unclosed routines.
     """
 
@@ -355,6 +355,7 @@ def reconstruct_routines(results, min_tasks=1, allow_open=True):
     # make sure we just have the pairs which are start/end
     for i in range(len(results)):
         event = results[i][0]
+        print_event(event)
         if event.event == TaskEvent.ROUTINE_STARTED:
             if start is not None:
                 # need to close previous routine
@@ -366,6 +367,7 @@ def reconstruct_routines(results, min_tasks=1, allow_open=True):
             task_count = 0
         elif event.event == TaskEvent.ROUTINE_STOPPED and start is not None:
             if task_count >= min_tasks:
+                # print task_count
                 routines.append((start, event))
             start = None
         else:

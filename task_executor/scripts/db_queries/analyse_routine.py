@@ -24,7 +24,7 @@ import cmd
 def init():
     rospy.init_node("routine_analysis")
 
-    msg_store = MessageStoreProxy(collection='task_events')
+    msg_store = MessageStoreProxy(database='aaf_message_store', collection='task_events')
 
     parser = argparse.ArgumentParser(description='Analyses the task execution behaviour in a routine window. Assumes all task ids are unique in this window.')
     parser.add_argument('start', metavar='S', type=task_query.mkdatetime, nargs='?', 

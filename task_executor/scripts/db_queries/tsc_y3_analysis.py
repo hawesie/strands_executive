@@ -22,18 +22,18 @@ import argparse
 import cmd
 
 def init():
-    rospy.init_node("aaf_y3_analysis")
+    rospy.init_node("tsc_y3_analysis")
 
-    msg_store = MessageStoreProxy(database='aaf_message_store',collection='task_events')
+    msg_store = MessageStoreProxy(database='message_store',collection='task_events')
 
     try:
-        tz = pytz.timezone(pytz.country_timezones['at'][0])
+        tz = pytz.timezone(pytz.country_timezones['gb'][0])
 
-        analysis_start = datetime(2016,3,23,16,41,tzinfo=tz)
-        analysis_end = datetime(2016,5,24,20,15,tzinfo=tz)
+        analysis_start = datetime(2016,5,9,16,41,tzinfo=tz)
+        analysis_end = datetime(2016,8,10,20,15,tzinfo=tz)
 
-        daily_start = time(9,00, tzinfo=tz)
-        daily_end = time(22,00, tzinfo=tz)
+        daily_start = time(6,00, tzinfo=tz)
+        daily_end = time(20,00, tzinfo=tz)
 
         filtered_routines = reconstruct_routines(task_query.query_tasks(msg_store, start_date=analysis_start, end_date=analysis_end))
 
@@ -61,7 +61,7 @@ def init():
 
         # analyser.do_print('')
 
-        # analyser.do_taskplot('0 aaf_y3')
+        # analyser.do_taskplot('0 tsc_y3')
         # analyser.do_timeplot('0 aaf_y3')
 
 
