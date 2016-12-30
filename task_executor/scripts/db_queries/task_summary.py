@@ -11,7 +11,7 @@ from task_executor import task_routine, task_query
 from task_executor.utils import rostime_to_python, python_to_rostime, ros_duration_to_string
 from task_executor.task_query import task_groups_in_window, daily_windows_in_range, reconstruct_routines, group, task_event_string
 from task_executor.routine_analyser import RoutineAnalyser
-from copy import copy
+from copy import copy, deepcopy
 from pymongo import Connection
 from tabulate import tabulate
 
@@ -159,6 +159,27 @@ def summarise_actions(summary_collection, start_date = None, end_date = None):
 def init():
     rospy.init_node("task_summary")
     
+
+    parser = argparse.ArgumentParser(description='Prints details of task executions. S and E override all other options if provided, else default is all time.')
+    parser.add_argument('start', metavar='S', type=task_query.mkdatetime, nargs='?', 
+                   help='Start datetime for analysis. Formatted "d/m/y H:M" e.g. "06/07/14 06:38"')
+    
+    parser.add_argument('end', metavar='E', type=task_query.mkdatetime, nargs='?', 
+                   help='End datetime for analysis. Formatted "d/m/y H:M" e.g. "06/07/14 06:38"')
+
+    parser.add_argument('-tz', '--time_zone', type=str, nargs='?', default='gb',
+                    help='Country code for timezone lookup. Default is "gb". Examples include "at" and "de".')
+    
+
+    analysis_window_group = parser.add_mutually_exclusive_group()
+    analysis_window_group.add_argument("-d", "--day", help="Analyse the last 24 hours", action="store_true")
+    analysis_window_group.add_argument("-w", "--week", help="Analyse the last week", action="store_true")
+    analysis_window_group.add_argument("-hrs", "--hours", type=int, help="Analyse these last hours")
+    analysis_window_group.add_argument("-t", "--today",  help="Analyse just today (from midnight last night)", action="store_true")
+
+
+    args = parser.parse_args()
+
     task_event_mongo_host = 'localhost'
     task_event_mongo_port = 62345
 
@@ -166,7 +187,8 @@ def init():
     task_summary_mongo_port = 62345
 
     db_name = 'message_store'
-    event_col_name = 'task_events_unique'        
+    # event_col_name = 'task_events_unique'        
+    event_col_name = 'task_events'        
     event_msg_store = MessageStoreProxy(database=db_name, collection=event_col_name)
     
     task_event_mongo_client = Connection(task_event_mongo_host, task_event_mongo_port)
@@ -176,12 +198,28 @@ def init():
     task_summary_mongo_client = Connection(task_summary_mongo_host, task_summary_mongo_port)
     summary_collection = task_summary_mongo_client[db_name][summary_col_name]
 
-
     tz = pytz.timezone(pytz.country_timezones['gb'][0])
 
-    analysis_start = datetime(2016,5,23,5,00,tzinfo=tz)
     # analysis_end = datetime(2016,6,6,23,00,tzinfo=tz)
-    analysis_end = datetime(2016,8,10,23,00,tzinfo=tz)
+    analysis_end = datetime.now(tz)
+
+    print args
+
+    analysis_start = None
+
+    if args.start is not None:
+        analysis_start = args.start
+    else:
+        if args.hours is not None:
+            analysis_start  = analysis_end - timedelta(hours=args.hours)
+        elif args.day:
+            analysis_start  = analysis_end - timedelta(hours=24)
+        elif args.week:
+            analysis_start  = analysis_end - timedelta(weeks=1)
+        elif args.today:
+            analysis_start  = deepcopy(analysis_end).replace(hour=0, minute=0, second=0)
+
+    print 'Describing task executions from %s to %s' % (analysis_start.strftime('%d/%m/%y %H:%M:%S'), analysis_end.strftime('%d/%m/%y %H:%M:%S'))
 
     create_task_summary_docs(event_msg_store, event_collection, summary_collection, reprocess=False)
     summarise_actions(summary_collection, start_date=analysis_start, end_date=analysis_end)    
