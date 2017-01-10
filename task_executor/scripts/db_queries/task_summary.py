@@ -26,8 +26,17 @@ import argparse
 import cmd
 
 
-def create_task_summary_docs(event_msg_store, event_collection, summary_collection, reprocess = False):
+def create_task_summary_docs(event_msg_store, event_collection, summary_collection, reprocess = False, start_date = None, end_date = None):
     try:
+
+        base_query_doc = {}
+
+        if start_date is not None:
+            base_query_doc['time'] = {'$gte': start_date}
+        
+        if end_date is not None:
+            base_query_doc['time'] = {'$lte': end_date}
+
 
         event_task_ids = set(event_collection.find().distinct('task.task_id'))
         summary_task_ids = set(summary_collection.find().distinct('task_id'))
@@ -187,8 +196,8 @@ def init():
     task_summary_mongo_port = 62345
 
     db_name = 'message_store'
-    # event_col_name = 'task_events_unique'        
-    event_col_name = 'task_events'        
+    event_col_name = 'task_events_unique'        
+    # event_col_name = 'task_events'        
     event_msg_store = MessageStoreProxy(database=db_name, collection=event_col_name)
     
     task_event_mongo_client = Connection(task_event_mongo_host, task_event_mongo_port)
@@ -218,11 +227,13 @@ def init():
             analysis_start  = analysis_end - timedelta(weeks=1)
         elif args.today:
             analysis_start  = deepcopy(analysis_end).replace(hour=0, minute=0, second=0)
+        else:
+            analysis_start = datetime.fromtimestamp(0, tz)
 
     print 'Describing task executions from %s to %s' % (analysis_start.strftime('%d/%m/%y %H:%M:%S'), analysis_end.strftime('%d/%m/%y %H:%M:%S'))
 
-    create_task_summary_docs(event_msg_store, event_collection, summary_collection, reprocess=False)
-    summarise_actions(summary_collection, start_date=analysis_start, end_date=analysis_end)    
+    create_task_summary_docs(event_msg_store, event_collection, summary_collection, reprocess=False, start_date=analysis_start, end_date=analysis_end)
+    summarise_actions(summary_collection, start_date=analysis_start, end_date=analysis_end)
 
 
 
